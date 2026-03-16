@@ -1,27 +1,25 @@
-# Worship Song Library (Full PWA)
+# Worship Song Library (PWA)
 
-Worship Song Library is a production-ready Progressive Web App for worship leaders and musicians to manage personal song libraries, upload key-specific PDF chord sheets, and access songs across devices.
+Worship Song Library is a Progressive Web App for worship leaders and musicians to manage a personal song catalog with chord sheets by key.
 
-## Highlights
+## Features
 
-- Firebase Auth (email/password): signup, login, logout, session persistence.
-- User-scoped song library in Firestore.
-- Key-based chord sheets in Firebase Storage.
-- Song detail page with key selector, PDF viewer, print/download/view actions.
-- Dashboard with search + recently used songs.
-- Song tags (e.g. Christmas, Easter, Communion).
-- Setlist builder with song ordering controls.
-- PWA install support (manifest + service worker).
-- Offline fallback for cached app shell and local song list cache.
+- Email/password authentication with Firebase Auth.
+- User-scoped song data (each user only sees their own songs).
+- Add songs with key-specific PDF chord sheets.
+- Real-time search and alphabetized library browsing.
+- Song detail page with key selector, PDF viewer, download, and print.
+- Recently used songs on dashboard.
+- Optional setlist builder.
+- PWA-ready (`manifest.json` + `service-worker.js`) with offline shell and local cached song list fallback.
 
-## Stack
+## Tech Stack
 
-- React + Vite
-- Tailwind CSS
-- React Router
-- Firebase (Auth, Firestore, Storage)
+- **Frontend:** React + Vite + Tailwind CSS + React Router
+- **Backend:** Firebase (Auth, Firestore, Storage)
+- **PWA:** Web manifest + custom service worker
 
-## Folder Structure
+## Project Structure
 
 ```text
 src/
@@ -38,12 +36,16 @@ public/
 ## Setup
 
 ### 1. Install
+### 1) Install dependencies
 
 ```bash
 npm install
 ```
 
 ### 2. Configure Firebase env vars
+### 2) Create environment file
+
+Copy `.env.example` to `.env` and fill your Firebase project values:
 
 ```bash
 cp .env.example .env
@@ -59,12 +61,36 @@ Fill `.env` using your Firebase web app credentials.
 - Enable Storage
 
 ### 4. Run locally
+### 3) Create Firebase project
+
+1. Go to [Firebase Console](https://console.firebase.google.com/).
+2. Create a project.
+3. Enable **Authentication** > Email/Password.
+4. Create **Firestore Database** (production or test mode).
+5. Enable **Storage**.
+6. In Project Settings > General > Your Apps, add a web app and copy config values into `.env`.
+
+### 4) Recommended Firestore model
+
+Collections used by this app:
+
+- `users`
+  - `userId`, `email`, `createdAt`
+- `songs`
+  - `userId`, `title`, `artist`, `createdAt`, `keys[]`, `recentOpens`, `lastOpenedAt`
+- `chordSheets`
+  - `songId`, `key`, `pdfUrl`, `uploadedAt`
+- `setlists`
+  - `userId`, `name`, `songs[]`
+
+### 5) Run app locally
 
 ```bash
 npm run dev
 ```
 
 ### 5. Production build
+### 6) Build for production
 
 ```bash
 npm run build
@@ -99,6 +125,9 @@ npm run build
 - `songs[]`
 
 ## Suggested Firestore Rules
+## Firebase security rules (starter example)
+
+### Firestore rules
 
 ```javascript
 rules_version = '2';
@@ -111,6 +140,8 @@ service cloud.firestore {
     match /songs/{songId} {
       allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
       allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
     }
 
     match /chordSheets/{sheetId} {
@@ -126,6 +157,14 @@ service cloud.firestore {
 ```
 
 ## Suggested Storage Rules
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+    }
+  }
+}
+```
+
+### Storage rules
 
 ```javascript
 rules_version = '2';
@@ -143,3 +182,13 @@ service firebase.storage {
 - `public/manifest.json` enables installability.
 - `public/service-worker.js` handles static caching and offline document fallback.
 - Song list uses localStorage fallback if Firestore is unavailable.
+## PWA behavior
+
+- Installable (manifest + standalone display mode).
+- Service worker caches app shell and static assets.
+- Song list falls back to last local cache when network is unavailable.
+
+## Notes
+
+- PDF rendering is done with an `<iframe>` for simplicity.
+- Song detail upload currently refreshes the page after adding/replacing a key PDF.

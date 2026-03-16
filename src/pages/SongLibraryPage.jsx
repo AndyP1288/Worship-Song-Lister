@@ -8,6 +8,8 @@ export default function SongLibraryPage({ songs, search, onSearch }) {
       const haystack = [song.title, song.artist, ...(song.tags || [])].join(' ').toLowerCase();
       return haystack.includes(normalized);
     })
+  const filtered = [...songs]
+    .filter((song) => song.title.toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => a.title.localeCompare(b.title));
 
   return (
@@ -20,6 +22,11 @@ export default function SongLibraryPage({ songs, search, onSearch }) {
         ) : (
           filtered.map((song) => <SongCard key={song.id} song={song} />)
         )}
+      <SongSearchBar value={search} onChange={onSearch} />
+      <div className="grid gap-3">
+        {filtered.map((song) => (
+          <SongCard key={song.id} song={song} />
+        ))}
       </div>
     </div>
   );

@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { addDoc, collection, getDocs, query, updateDoc, where, doc } from 'firebase/firestore';
+import { useEffect, useState } from 'react';
+import { addDoc, collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../firebase/config';
 
 export default function SetlistsPage({ songs, userId }) {
@@ -54,6 +56,9 @@ export default function SetlistsPage({ songs, userId }) {
                 checked={selectedSongs.includes(song.id)}
                 onChange={(e) =>
                   setSelectedSongs((prev) => (e.target.checked ? [...prev, song.id] : prev.filter((id) => id !== song.id)))
+                  setSelectedSongs((prev) =>
+                    e.target.checked ? [...prev, song.id] : prev.filter((id) => id !== song.id)
+                  )
                 }
               />
               {song.title}
@@ -85,6 +90,9 @@ export default function SetlistsPage({ songs, userId }) {
                 </div>
               </div>
             ))}
+          <div key={setlist.id} className="card">
+            <h2 className="font-semibold">{setlist.name}</h2>
+            <p className="text-sm text-slate-600">{setlist.songs.length} songs</p>
           </div>
         ))}
       </div>

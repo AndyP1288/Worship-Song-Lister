@@ -5,6 +5,7 @@ import SongSearchBar from '../components/SongSearchBar';
 export default function DashboardPage({ songs, recentlyUsed, search, onSearch, loading }) {
   const normalized = search.toLowerCase();
   const filtered = songs.filter((song) => [song.title, song.artist, ...(song.tags || [])].join(' ').toLowerCase().includes(normalized));
+  const filtered = songs.filter((song) => song.title.toLowerCase().includes(search.toLowerCase()));
 
   return (
     <div className="space-y-4">

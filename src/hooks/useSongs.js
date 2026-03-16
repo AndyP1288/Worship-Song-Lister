@@ -10,6 +10,12 @@ import {
   orderBy,
   query,
   serverTimestamp,
+  getDoc,
+  getDocs,
+  orderBy,
+  query,
+  serverTimestamp,
+  setDoc,
   updateDoc,
   where
 } from 'firebase/firestore';
@@ -79,6 +85,44 @@ export function useSongs(userId) {
   );
 
   const addSongWithSheet = async ({ title, artist, key, file, tags = [] }) => {
+      return;
+    }
+
+    const loadSongs = async () => {
+      setLoading(true);
+      const songsQuery = query(collection(db, 'songs'), where('userId', '==', userId), orderBy('title'));
+      const songSnapshot = await getDocs(songsQuery);
+
+      const songList = await Promise.all(
+        songSnapshot.docs.map(async (songDoc) => {
+          const sheetQuery = query(collection(db, 'chordSheets'), where('songId', '==', songDoc.id));
+          const sheetSnapshot = await getDocs(sheetQuery);
+          return {
+            id: songDoc.id,
+            ...songDoc.data(),
+            sheets: sheetSnapshot.docs.map((sheet) => ({ id: sheet.id, ...sheet.data() }))
+          };
+        })
+      );
+
+      setSongs(songList);
+      localStorage.setItem(`offline-songs-${userId}`, JSON.stringify(songList));
+      setLoading(false);
+    };
+
+    loadSongs().catch(() => {
+      const cached = localStorage.getItem(`offline-songs-${userId}`);
+      if (cached) setSongs(JSON.parse(cached));
+      setLoading(false);
+    });
+  }, [userId]);
+
+  const recentlyUsed = useMemo(
+    () => [...songs].sort((a, b) => (b.lastOpenedAt?.seconds || 0) - (a.lastOpenedAt?.seconds || 0)).slice(0, 5),
+    [songs]
+  );
+
+  const addSongWithSheet = async ({ title, artist, key, file }) => {
     const normalizedTitle = title.trim();
     const existing = songs.find((song) => song.title.toLowerCase() === normalizedTitle.toLowerCase());
     let songId = existing?.id;
@@ -89,6 +133,7 @@ export function useSongs(userId) {
         title: normalizedTitle,
         artist: artist?.trim() || '',
         tags,
+        tags: [],
         createdAt: serverTimestamp(),
         keys: [key],
         recentOpens: 0
@@ -99,6 +144,7 @@ export function useSongs(userId) {
         artist: existing.artist || artist?.trim() || '',
         keys: arrayUnion(key),
         tags: arrayUnion(...tags)
+        keys: arrayUnion(key)
       });
     }
 
@@ -143,4 +189,16 @@ export function useSongs(userId) {
   };
 
   return { songs, loading, recentlyUsed, addSongWithSheet, addKeyVersion, markSongOpened, getSetlists };
+  const markSongOpened = async (songId) => {
+    const songRef = doc(db, 'songs', songId);
+    const snapshot = await getDoc(songRef);
+    const currentOpens = snapshot.data()?.recentOpens || 0;
+    await setDoc(
+      songRef,
+      { recentOpens: currentOpens + 1, lastOpenedAt: serverTimestamp() },
+      { merge: true }
+    );
+  };
+
+  return { songs, loading, recentlyUsed, addSongWithSheet, markSongOpened };
 }

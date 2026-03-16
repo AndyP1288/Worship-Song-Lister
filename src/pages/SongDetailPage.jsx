@@ -1,11 +1,20 @@
 import { useMemo, useState } from 'react';
 
 export default function SongDetailPage({ song, onSongOpened, onAddKeyVersion }) {
+import { addDoc, collection, serverTimestamp, updateDoc, doc, arrayUnion } from 'firebase/firestore';
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+import { db, storage } from '../firebase/config';
+
+export default function SongDetailPage({ song, userId, onSongOpened }) {
   const [selectedKey, setSelectedKey] = useState(song?.keys?.[0] || 'C');
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
 
   const selectedSheet = useMemo(() => song?.sheets?.find((sheet) => sheet.key === selectedKey), [song, selectedKey]);
+  const selectedSheet = useMemo(
+    () => song?.sheets?.find((sheet) => sheet.key === selectedKey),
+    [song, selectedKey]
+  );
 
   if (!song) return <p className="card">Song not found.</p>;
 
@@ -21,6 +30,19 @@ export default function SongDetailPage({ song, onSongOpened, onAddKeyVersion }) 
     setError('');
     try {
       await onAddKeyVersion({ songId: song.id, key: selectedKey, file });
+      const fileRef = ref(storage, `users/${userId}/songs/${song.id}/${selectedKey}-${Date.now()}.pdf`);
+      await uploadBytes(fileRef, file);
+      const pdfUrl = await getDownloadURL(fileRef);
+      await addDoc(collection(db, 'chordSheets'), {
+        songId: song.id,
+        key: selectedKey,
+        pdfUrl,
+        uploadedAt: serverTimestamp()
+      });
+      await updateDoc(doc(db, 'songs', song.id), {
+        keys: arrayUnion(selectedKey)
+      });
+      window.location.reload();
     } catch (err) {
       setError(err.message || 'Upload failed');
     } finally {
@@ -68,6 +90,7 @@ export default function SongDetailPage({ song, onSongOpened, onAddKeyVersion }) 
         <div className="card space-y-3">
           <div className="flex flex-wrap gap-2">
             <button type="button" className="btn-primary" onClick={handleOpen}>
+            <button className="btn-primary" onClick={handleOpen}>
               Mark as recently used
             </button>
             <a href={selectedSheet.pdfUrl} target="_blank" rel="noreferrer" className="btn-secondary">
@@ -77,6 +100,7 @@ export default function SongDetailPage({ song, onSongOpened, onAddKeyVersion }) 
               Download PDF
             </a>
             <button type="button" className="btn-secondary" onClick={() => window.print()}>
+            <button className="btn-secondary" onClick={() => window.print()}>
               Print
             </button>
           </div>

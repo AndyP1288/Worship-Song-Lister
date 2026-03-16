@@ -24,6 +24,7 @@ export default function AddSongPage({ onSubmit }) {
         .map((item) => item.trim())
         .filter(Boolean);
       await onSubmit({ title, artist, key, file, tags: tagList });
+      await onSubmit({ title, artist, key, file });
       navigate('/songs');
     } catch (err) {
       setError(err.message || 'Unable to save song.');
@@ -66,6 +67,12 @@ export default function AddSongPage({ onSubmit }) {
       <div>
         <label className="mb-1 block text-sm">Chord Sheet (PDF)</label>
         <input required type="file" accept="application/pdf" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+        <input
+          required
+          type="file"
+          accept="application/pdf"
+          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+        />
       </div>
 
       <button className="btn-primary" type="submit" disabled={saving}>
