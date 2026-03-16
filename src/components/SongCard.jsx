@@ -12,6 +12,15 @@ export default function SongCard({ song }) {
           </span>
         ))}
       </div>
+      {(song.tags || []).length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-2">
+          {song.tags.map((tag) => (
+            <span key={tag} className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600">
+              #{tag}
+            </span>
+          ))}
+        </div>
+      )}
     </Link>
   );
 }

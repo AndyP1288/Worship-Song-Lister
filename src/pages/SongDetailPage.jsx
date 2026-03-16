@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react';
+
+export default function SongDetailPage({ song, onSongOpened, onAddKeyVersion }) {
 import { addDoc, collection, serverTimestamp, updateDoc, doc, arrayUnion } from 'firebase/firestore';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { db, storage } from '../firebase/config';
@@ -8,6 +10,7 @@ export default function SongDetailPage({ song, userId, onSongOpened }) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
 
+  const selectedSheet = useMemo(() => song?.sheets?.find((sheet) => sheet.key === selectedKey), [song, selectedKey]);
   const selectedSheet = useMemo(
     () => song?.sheets?.find((sheet) => sheet.key === selectedKey),
     [song, selectedKey]
@@ -26,6 +29,7 @@ export default function SongDetailPage({ song, userId, onSongOpened }) {
     setUploading(true);
     setError('');
     try {
+      await onAddKeyVersion({ songId: song.id, key: selectedKey, file });
       const fileRef = ref(storage, `users/${userId}/songs/${song.id}/${selectedKey}-${Date.now()}.pdf`);
       await uploadBytes(fileRef, file);
       const pdfUrl = await getDownloadURL(fileRef);
@@ -43,6 +47,7 @@ export default function SongDetailPage({ song, userId, onSongOpened }) {
       setError(err.message || 'Upload failed');
     } finally {
       setUploading(false);
+      event.target.value = '';
     }
   };
 
@@ -51,11 +56,22 @@ export default function SongDetailPage({ song, userId, onSongOpened }) {
       <div className="card space-y-2">
         <h1 className="text-2xl font-bold">{song.title}</h1>
         {song.artist && <p className="text-slate-600">{song.artist}</p>}
+        {(song.tags || []).length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {song.tags.map((tag) => (
+              <span key={tag} className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-700">
+                #{tag}
+              </span>
+            ))}
+          </div>
+        )}
+
         <p className="text-sm text-slate-500">Select key version:</p>
         <div className="flex flex-wrap gap-2">
           {song.keys?.map((keyOption) => (
             <button
               key={keyOption}
+              type="button"
               className={`btn ${selectedKey === keyOption ? 'bg-brand-500 text-white' : 'btn-secondary'}`}
               onClick={() => setSelectedKey(keyOption)}
             >
@@ -73,6 +89,7 @@ export default function SongDetailPage({ song, userId, onSongOpened }) {
       {selectedSheet ? (
         <div className="card space-y-3">
           <div className="flex flex-wrap gap-2">
+            <button type="button" className="btn-primary" onClick={handleOpen}>
             <button className="btn-primary" onClick={handleOpen}>
               Mark as recently used
             </button>
@@ -82,6 +99,7 @@ export default function SongDetailPage({ song, userId, onSongOpened }) {
             <a href={selectedSheet.pdfUrl} download className="btn-secondary">
               Download PDF
             </a>
+            <button type="button" className="btn-secondary" onClick={() => window.print()}>
             <button className="btn-secondary" onClick={() => window.print()}>
               Print
             </button>

@@ -13,6 +13,7 @@ import SongLibraryPage from './pages/SongLibraryPage';
 
 function AppRoutes() {
   const { user } = useAuth();
+  const { songs, recentlyUsed, loading, addSongWithSheet, addKeyVersion, markSongOpened } = useSongs(user?.uid);
   const { songs, recentlyUsed, loading, addSongWithSheet, markSongOpened } = useSongs(user?.uid);
   const [search, setSearch] = useState('');
 
@@ -20,6 +21,7 @@ function AppRoutes() {
 
   const SongDetailRoute = () => {
     const { songId } = useParams();
+    return <SongDetailPage song={songMap[songId]} onSongOpened={markSongOpened} onAddKeyVersion={addKeyVersion} />;
     return <SongDetailPage song={songMap[songId]} userId={user?.uid} onSongOpened={markSongOpened} />;
   };
 
@@ -36,6 +38,10 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       >
+        <Route
+          index
+          element={<DashboardPage songs={songs} recentlyUsed={recentlyUsed} search={search} onSearch={setSearch} loading={loading} />}
+        />
         <Route index element={<DashboardPage songs={songs} recentlyUsed={recentlyUsed} search={search} onSearch={setSearch} loading={loading} />} />
         <Route path="songs" element={<SongLibraryPage songs={songs} search={search} onSearch={setSearch} />} />
         <Route path="songs/:songId" element={<SongDetailRoute />} />

@@ -6,6 +6,7 @@ export default function AddSongPage({ onSubmit }) {
   const [title, setTitle] = useState('');
   const [artist, setArtist] = useState('');
   const [key, setKey] = useState('C');
+  const [tags, setTags] = useState('');
   const [file, setFile] = useState(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -18,6 +19,11 @@ export default function AddSongPage({ onSubmit }) {
     setSaving(true);
     setError('');
     try {
+      const tagList = tags
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean);
+      await onSubmit({ title, artist, key, file, tags: tagList });
       await onSubmit({ title, artist, key, file });
       navigate('/songs');
     } catch (err) {
@@ -43,6 +49,11 @@ export default function AddSongPage({ onSubmit }) {
       </div>
 
       <div>
+        <label className="mb-1 block text-sm">Tags (optional, comma-separated)</label>
+        <input className="input" value={tags} onChange={(e) => setTags(e.target.value)} placeholder="Christmas, Easter, Communion" />
+      </div>
+
+      <div>
         <label className="mb-1 block text-sm">Key</label>
         <select className="input" value={key} onChange={(e) => setKey(e.target.value)}>
           {MUSICAL_KEYS.map((musicalKey) => (
@@ -55,6 +66,7 @@ export default function AddSongPage({ onSubmit }) {
 
       <div>
         <label className="mb-1 block text-sm">Chord Sheet (PDF)</label>
+        <input required type="file" accept="application/pdf" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
         <input
           required
           type="file"

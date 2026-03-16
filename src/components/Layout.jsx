@@ -21,6 +21,19 @@ export default function Layout() {
         </button>
       </header>
 
+      <nav className="mb-4 flex flex-wrap gap-2 rounded-xl bg-white p-2 shadow-sm">
+        <NavLink to="/" className={({ isActive }) => `btn ${isActive ? 'bg-brand-500 text-white' : 'hover:bg-slate-100'}`}>
+          Dashboard
+        </NavLink>
+        <NavLink to="/songs" className={({ isActive }) => `btn ${isActive ? 'bg-brand-500 text-white' : 'hover:bg-slate-100'}`}>
+          Library
+        </NavLink>
+        <NavLink to="/add-song" className={({ isActive }) => `btn ${isActive ? 'bg-brand-500 text-white' : 'hover:bg-slate-100'}`}>
+          Add Song
+        </NavLink>
+        <NavLink to="/setlists" className={({ isActive }) => `btn ${isActive ? 'bg-brand-500 text-white' : 'hover:bg-slate-100'}`}>
+          Setlists
+        </NavLink>
       <nav className="mb-4 flex gap-2 rounded-xl bg-white p-2 shadow-sm">
         <NavLink
           to="/"

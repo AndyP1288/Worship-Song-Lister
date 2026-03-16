@@ -35,12 +35,14 @@ public/
 
 ## Setup
 
+### 1. Install
 ### 1) Install dependencies
 
 ```bash
 npm install
 ```
 
+### 2. Configure Firebase env vars
 ### 2) Create environment file
 
 Copy `.env.example` to `.env` and fill your Firebase project values:
@@ -49,6 +51,16 @@ Copy `.env.example` to `.env` and fill your Firebase project values:
 cp .env.example .env
 ```
 
+Fill `.env` using your Firebase web app credentials.
+
+### 3. Firebase Console
+
+- Create project
+- Enable Authentication (Email/Password)
+- Enable Firestore
+- Enable Storage
+
+### 4. Run locally
 ### 3) Create Firebase project
 
 1. Go to [Firebase Console](https://console.firebase.google.com/).
@@ -77,12 +89,42 @@ Collections used by this app:
 npm run dev
 ```
 
+### 5. Production build
 ### 6) Build for production
 
 ```bash
 npm run build
 ```
 
+## Data Model
+
+### `users`
+- `userId`
+- `email`
+- `createdAt`
+
+### `songs`
+- `userId`
+- `title`
+- `artist`
+- `tags[]`
+- `keys[]`
+- `createdAt`
+- `lastOpenedAt`
+- `recentOpens`
+
+### `chordSheets`
+- `songId`
+- `key`
+- `pdfUrl`
+- `uploadedAt`
+
+### `setlists`
+- `userId`
+- `name`
+- `songs[]`
+
+## Suggested Firestore Rules
 ## Firebase security rules (starter example)
 
 ### Firestore rules
@@ -96,6 +138,8 @@ service cloud.firestore {
     }
 
     match /songs/{songId} {
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
       allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
       allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
     }
@@ -105,6 +149,14 @@ service cloud.firestore {
     }
 
     match /setlists/{setlistId} {
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+    }
+  }
+}
+```
+
+## Suggested Storage Rules
       allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
       allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
     }
@@ -125,6 +177,11 @@ service firebase.storage {
 }
 ```
 
+## PWA Notes
+
+- `public/manifest.json` enables installability.
+- `public/service-worker.js` handles static caching and offline document fallback.
+- Song list uses localStorage fallback if Firestore is unavailable.
 ## PWA behavior
 
 - Installable (manifest + standalone display mode).
