@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { addDoc, collection, getDocs, query, updateDoc, where, doc } from 'firebase/firestore';
+import { useEffect, useState } from 'react';
+import { addDoc, collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../firebase/config';
 
 export default function SetlistsPage({ songs, userId }) {
@@ -22,14 +24,14 @@ export default function SetlistsPage({ songs, userId }) {
   const createSetlist = async (event) => {
     event.preventDefault();
     if (!name.trim()) return;
-    const setlistRef = await addDoc(collection(db, 'setlists'), {
+    await addDoc(collection(db, 'setlists'), {
       userId,
       name: name.trim(),
       songs: selectedSongs
     });
-    setSetlists((prev) => [...prev, { id: setlistRef.id, userId, name: name.trim(), songs: selectedSongs }]);
     setName('');
     setSelectedSongs([]);
+    window.location.reload();
   };
 
   const moveSong = async (setlist, index, direction) => {
@@ -39,35 +41,6 @@ export default function SetlistsPage({ songs, userId }) {
     [next[index], next[target]] = [next[target], next[index]];
     await updateDoc(doc(db, 'setlists', setlist.id), { songs: next });
     setSetlists((prev) => prev.map((item) => (item.id === setlist.id ? { ...item, songs: next } : item)));
-  };
-
-  const printSetlistWithChordSheets = (setlist) => {
-    const rows = setlist.songs
-      .map((songId) => songMap[songId])
-      .filter(Boolean)
-      .map((song) => {
-        const sheet = song.sheets?.[0];
-        return `
-          <section style="page-break-after: always; margin-bottom: 24px;">
-            <h2 style="margin: 0 0 8px; font-family: system-ui;">${song.title}</h2>
-            <p style="margin: 0 0 12px; color: #475569; font-family: system-ui;">${song.artist || ''}</p>
-            ${sheet ? `<iframe src="${sheet.pdfUrl}" style="width: 100%; height: 88vh; border: 1px solid #cbd5e1; border-radius: 8px;"></iframe>` : '<p>No chord sheet uploaded.</p>'}
-          </section>
-        `;
-      })
-      .join('');
-
-    const printWindow = window.open('', '_blank', 'noopener,noreferrer');
-    if (!printWindow) return;
-    printWindow.document.write(`
-      <html>
-        <head><title>${setlist.name}</title></head>
-        <body>${rows}</body>
-      </html>
-    `);
-    printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
   };
 
   return (
@@ -83,6 +56,9 @@ export default function SetlistsPage({ songs, userId }) {
                 checked={selectedSongs.includes(song.id)}
                 onChange={(e) =>
                   setSelectedSongs((prev) => (e.target.checked ? [...prev, song.id] : prev.filter((id) => id !== song.id)))
+                  setSelectedSongs((prev) =>
+                    e.target.checked ? [...prev, song.id] : prev.filter((id) => id !== song.id)
+                  )
                 }
               />
               {song.title}
@@ -97,8 +73,8 @@ export default function SetlistsPage({ songs, userId }) {
           <div key={setlist.id} className="card space-y-2">
             <div className="flex items-center justify-between">
               <h2 className="font-semibold">{setlist.name}</h2>
-              <button type="button" className="btn-secondary" onClick={() => printSetlistWithChordSheets(setlist)}>
-                Print with Chord Sheets
+              <button type="button" className="btn-secondary" onClick={() => window.print()}>
+                Print Setlist
               </button>
             </div>
             {setlist.songs.map((songId, index) => (
@@ -114,6 +90,9 @@ export default function SetlistsPage({ songs, userId }) {
                 </div>
               </div>
             ))}
+          <div key={setlist.id} className="card">
+            <h2 className="font-semibold">{setlist.name}</h2>
+            <p className="text-sm text-slate-600">{setlist.songs.length} songs</p>
           </div>
         ))}
       </div>
